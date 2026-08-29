@@ -65,7 +65,7 @@ OUT_Y = [168, 193, 220, 248, 283, 314, 345, 382, 442, 516, 590, 665]
 def main():
     ref = np.asarray(Image.open('DIMA.jpeg').convert('RGB')).astype(np.float32) / 255.
     RH, RW, _ = ref.shape
-    doc = pymupdf.open('DIMA_Suit_Final_Print.pdf')
+    doc = pymupdf.open('DIMA_Suit_Final_v2.pdf')
     pg = doc[0]
     dpi = 200
     pix = pg.get_pixmap(dpi=dpi, colorspace=pymupdf.csRGB, alpha=True)

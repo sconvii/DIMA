@@ -18,7 +18,7 @@ from render import (RICH_BLACK, PURPLE, PURPLE_DK, WHITE, SEAM, TECH, GREY_TXT, 
                     composite_grey, fill, fill_pts, stroke, add, Clip, text)
 
 MM = 72.0 / 25.4
-OUT = 'DIMA_Suit_Final_Print.pdf'
+OUT = 'DIMA_Suit_Final_v2.pdf'
 
 doc, page, DR, SRECT = S.load()
 PW, PH = SRECT.width, SRECT.height          # 1192.6 x 843.8 pt  (A3 landscape)
@@ -98,12 +98,12 @@ def paint_front_body(c):
 
 def paint_front_sleeve_wl(c):                 # wearer's LEFT -> violet sleeve
     bigrect(c, 490, 130, 610, 470, PURPLE)
-    D.cuff_slivers(c, 558, 396, flip=True, colour=PURPLE_DK)
+    D.cuff_slivers(c, 590, 336, flip=True, colour=PURPLE_DK)
 
 
 def paint_front_sleeve_wr(c):                 # wearer's RIGHT -> black sleeve
     bigrect(c, 280, 130, 400, 470, RICH_BLACK)
-    D.cuff_burst(c, 332, 398, flip=False, colour=PURPLE)
+    D.cuff_burst(c, 298, 350, flip=False, colour=PURPLE)
 
 
 def paint_back_torso(c):
@@ -123,12 +123,12 @@ def paint_back_legs(c):
 
 def paint_back_sleeve_wl(c):                  # viewer-left on the back view
     bigrect(c, 600, 130, 720, 470, PURPLE)
-    D.cuff_slivers(c, 662, 396, flip=False, colour=PURPLE_DK)
+    D.cuff_slivers(c, 630, 336, flip=False, colour=PURPLE_DK)
 
 
 def paint_back_sleeve_wr(c):
     bigrect(c, 820, 130, 950, 470, RICH_BLACK)
-    D.cuff_burst(c, 888, 398, flip=True, colour=PURPLE)
+    D.cuff_burst(c, 922, 350, flip=True, colour=PURPLE)
 
 
 # ---- side views -------------------------------------------------------------
@@ -157,6 +157,10 @@ def _side_body(c, mirror):
     bx = D.mx((198.0, 700.0), ax) if mirror else (198.0, 700.0)
     fill(c, SH.blade(bx[0], bx[1], -114 if mirror else -66, 72, 3.6, 0.30), PURPLE_DK)
 
+    # forearm streak band: in this view the visible forearm belongs to the body
+    # profile panel, so it is painted here rather than with the sleeve
+    D.side_forearm(c, mirror, PURPLE_DK if mirror else PURPLE)
+
     for pts in (D.SIDE_TORSO_FRONT, D.SIDE_TORSO_BACK):
         stroke(c, D.smooth(M(pts)), WHITE, 1.9, cap=1, join=1)
     for pts in (D.SIDE_LEG_FRONT, D.SIDE_LEG_BACK):
@@ -174,14 +178,9 @@ def paint_side_wl(c):
 def paint_side_sleeve(c, wearer, mirror):
     ax = D.MIRROR
     box = (955, 96, 1105, 470) if mirror else (118, 96, 268, 470)
-    if wearer == 'L':
-        bigrect(c, *box, PURPLE)
-        ox = D.mx((186.0, 368.0), ax)[0] if mirror else 186.0
-        D.cuff_slivers(c, ox, 368, flip=mirror, colour=PURPLE_DK)
-    else:
-        bigrect(c, *box, RICH_BLACK)
-        ox = D.mx((190.0, 372.0), ax)[0] if mirror else 190.0
-        D.cuff_burst(c, ox, 372, flip=mirror, colour=PURPLE)
+    # the upper arm is plain in the reference; the forearm band is painted with
+    # the body panel, where the forearm is actually visible in this view
+    bigrect(c, *box, PURPLE if wearer == 'L' else RICH_BLACK)
 
 
 def paint_collar(c, i):

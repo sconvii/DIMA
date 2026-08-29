@@ -244,6 +244,67 @@ BACK_PIPE_WR = merge_by_y(offset_x(RAGLAN_BR, -BACK_BAND_W), list(BACK_PIPE_R), 
 
 
 # Violet field on the upper back (wearer's LEFT), torn edge then side piping.
-BACK_FIELD_EDGE = [(796.0, 130.0), (782.0, 156.0), (766.0, 180.0), (746.0, 206.0),
-                   (726.0, 234.0), (710.0, 260.0), (700.0, 284.0), (692.0, 308.0),
-                   (688.0, 330.0)] + [p for p in BACK_PIPE_L if p[1] >= 342]
+# Pulled left against the reference: black must stay visible on the right of
+# the back panel, with only the streaks reaching across it.
+BACK_FIELD_EDGE = [(782.0, 130.0), (768.0, 156.0), (752.0, 180.0), (736.0, 206.0),
+                   (722.0, 234.0), (710.0, 260.0), (701.0, 284.0), (694.0, 308.0),
+                   (689.0, 330.0)] + [p for p in BACK_PIPE_L if p[1] >= 342]
+
+
+# ------------------------------------------------- front leg chevron (v2) ---
+# DIMA.jpeg shows the outer-leg band bending through a SHARP chevron at the
+# knee, not running straight down.  Fractions of the leg width measured off the
+# reference by scanline; the apex node is kept as a hard corner (no smoothing),
+# because the reference corner is angular, not rounded.
+CHEV_YS = [352, 400, 450, 495, 528, 548, 578, 606, 640, 680, 715, 736]
+CHEV_FRAC = [0.285, 0.310, 0.350, 0.425, 0.475, 0.512,
+             0.320, 0.205, 0.115, 0.065, 0.040, 0.028]
+CHEV_APEX = 5                       # index of the sharp corner
+
+FRONT_CHEV_PROF_L = profile(80, [y for y in CHEV_YS if y >= 460], FCX, 'L')
+FRONT_CHEV_PROF_R = profile(80, [y for y in CHEV_YS if y >= 460], FCX, 'R')
+
+
+def _hip_prof(side):
+    """Above the crotch the two legs are one panel, so the band width is
+    measured to the centre line rather than to a non-existent inseam."""
+    out = []
+    for (y, xo, xi) in profile(80, [y for y in CHEV_YS if y < 460], FCX, side):
+        inner = min(xi, FCX) if side == 'L' else max(xi, FCX)
+        out.append((y, xo, inner))
+    return out
+
+
+def _chev_edge(side):
+    """Band inner edge with the knee corner, blended up to the torso piping."""
+    prof = _hip_prof(side) + (FRONT_CHEV_PROF_L if side == 'L' else FRONT_CHEV_PROF_R)
+    pts = []
+    for (y, xo, xi), f in zip(prof, CHEV_FRAC):
+        w = abs(xi - xo)
+        pts.append((xo + f * w if side == 'L' else xo - f * w, y))
+    return pts
+
+
+FRONT_CHEV_L = _chev_edge('L')
+FRONT_CHEV_R = _chev_edge('R')
+
+
+def band_pinstripe(edge, prof, frac_out, side):
+    """Line inside the band, `frac_out` of the band width out from its inner
+    edge - follows the chevron exactly, corner included."""
+    out = []
+    for (x, y), (yy, xo, xi) in zip(edge, prof):
+        d = (x - xo) if side == 'L' else (xo - x)
+        out.append((x - d * frac_out, y) if side == 'L' else (x + d * frac_out, y))
+    return out
+
+
+_HIP_L = _hip_prof('L') + FRONT_CHEV_PROF_L
+_HIP_R = _hip_prof('R') + FRONT_CHEV_PROF_R
+FRONT_CHEV_PIN_L = band_pinstripe(FRONT_CHEV_L, _HIP_L, 0.40, 'L')
+FRONT_CHEV_PIN_R = band_pinstripe(FRONT_CHEV_R, _HIP_R, 0.40, 'R')
+
+# Band width at each node, so the pinstripe can be kept to the ~7 % of the band
+# measured on the reference instead of a fixed weight.
+FRONT_CHEV_W_L = [abs(x - xo) for (x, y), (yy, xo, xi) in zip(FRONT_CHEV_L, _HIP_L)]
+FRONT_CHEV_W_R = [abs(x - xo) for (x, y), (yy, xo, xi) in zip(FRONT_CHEV_R, _HIP_R)]

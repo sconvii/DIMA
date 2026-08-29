@@ -13,8 +13,8 @@ from reportlab.lib.utils import ImageReader
 from render import RICH_BLACK, GREY_TXT, PURPLE, PURPLE_DK, WHITE, composite_grey, text, fill
 
 MM = 72 / 25.4
-SRC = 'DIMA_Suit_Final_Print.pdf'
-OUT = 'DIMA_Suit_Final_Print_Check.pdf'
+SRC = 'DIMA_Suit_Final_v2.pdf'
+OUT = 'DIMA_Suit_Final_v2_Check.pdf'
 A3 = (1190.6, 842.0)
 TMP = '/tmp/claude-0/-home-user-DIMA/edc8a053-88ad-5a72-8239-043b986ec5ab/scratchpad'
 
@@ -61,7 +61,7 @@ def main():
     place(c, lay, 0.34 * A3[0], bot, 0.62 * A3[0], top - bot)
     text(c, 18 * MM + 0.15 * A3[0], bot - 6 * MM, 'DIMA.jpeg', 8, GREY_TXT, align='center')
     text(c, 0.34 * A3[0] + 0.31 * A3[0], bot - 6 * MM,
-         'DIMA_Suit_Final_Print.pdf, лист 1', 8, GREY_TXT, align='center')
+         'DIMA_Suit_Final_v2.pdf, лист 1', 8, GREY_TXT, align='center')
     c.showPage()
 
     # ---- 2. detail comparison --------------------------------------------

@@ -82,3 +82,56 @@ def taper_band(spine, widths_out, widths_in=None):
         b.append((x - px * widths_in[i], y - py * widths_in[i]))
     ring = a + b[::-1]
     return [[('M', *ring[0])] + [('L', *p) for p in ring[1:]] + [('Z',)]]
+
+
+def streak(x, y, ang, length, half_w, head=0.30, tail=0.10, bow=0.0):
+    """A long, thin slash mark - the motif actually used on DIMA.jpeg.
+
+    Much more elongated than `blade`: the widest point sits at `head` along the
+    length and both ends run out to points, so the mark reads as a torn streak
+    rather than a triangular wedge.  `bow` bends it slightly across its length.
+    """
+    a = math.radians(ang)
+    ux, uy = math.cos(a), math.sin(a)
+    px, py = -uy, ux
+
+    def at(t, w):
+        b = bow * math.sin(math.pi * t) * half_w
+        return (x + ux * length * t + px * (w + b),
+                y + uy * length * t + py * (w + b))
+
+    p0 = at(0.0, 0.0)
+    pa = at(head, half_w)
+    pb = at(1.0 - tail, half_w * 0.30)
+    p1 = at(1.0, 0.0)
+    pc = at(1.0 - tail, -half_w * 0.22)
+    pd = at(head, -half_w * 0.55)
+    return [[('M', p0[0], p0[1]),
+             ('C', *at(head * 0.45, half_w * 0.72), *at(head * 0.80, half_w), *pa),
+             ('C', *at(head + (1 - tail - head) * 0.5, half_w * 0.66), *pb, *p1),
+             ('C', *pc, *at(head + (1 - head) * 0.4, -half_w * 0.42), *pd),
+             ('C', *at(head * 0.60, -half_w * 0.40), *at(head * 0.25, -half_w * 0.16), *p0),
+             ('Z',)]]
+
+
+def streak_field(specs):
+    """Streaks from explicit (x, y, angle, length, half width[, bow]) tuples."""
+    out = []
+    for sp in specs:
+        x, y, ang, L, hw = sp[:5]
+        bow = sp[5] if len(sp) > 5 else 0.0
+        out += streak(x, y, ang, L, hw, bow=bow)
+    return out
+
+
+def streak_band(ox, oy, dx, dy, n, ang, specs):
+    """`n` streaks stepped along (dx, dy); `specs` cycles through
+    (offset across the step, angle jitter, length, half width)."""
+    out = []
+    for i in range(n):
+        off, dang, length, hw = specs[i % len(specs)]
+        a = math.radians(ang + dang)
+        bx = ox + dx * i - math.sin(a) * off
+        by = oy + dy * i + math.cos(a) * off
+        out += streak(bx, by, ang + dang, length, hw)
+    return out
