@@ -18,7 +18,7 @@ from render import (RICH_BLACK, PURPLE, PURPLE_DK, WHITE, SEAM, TECH, GREY_TXT, 
                     composite_grey, fill, fill_pts, stroke, add, Clip, text)
 
 MM = 72.0 / 25.4
-OUT = 'DIMA_Suit_Final_v2.pdf'
+OUT = 'DIMA_Suit_Final_v3.pdf'
 
 doc, page, DR, SRECT = S.load()
 PW, PH = SRECT.width, SRECT.height          # 1192.6 x 843.8 pt  (A3 landscape)
@@ -145,14 +145,9 @@ def _side_body(c, mirror):
     M = (lambda pts: D.mirror_pts(pts, ax)) if mirror else (lambda pts: pts)
     bigrect(c, *((955, 80, 1105, 790) if mirror else (118, 80, 268, 790)), RICH_BLACK)
     _wrap(c, D.SIDE_TORSO_FRONT, D.SIDE_TORSO_BACK, M)
-    _wrap(c, D.SIDE_LEG_FRONT, D.SIDE_LEG_BACK, M)
-
-    ch = M(D.SIDE_LEG_CHEV)
-    n = len(ch)
-    w = [min(3.6, 2.0 + 2.0 * math.sin(math.pi * i / (n - 1)) ** 0.7) for i in range(n)]
-    fill(c, SH.taper_band(ch, w, w), RICH_BLACK)
-    rib = M([(x - 8.0, y) for x, y in D.SIDE_LEG_CHEV])
-    fill(c, SH.taper_band(rib, [v * 0.48 for v in w], [v * 0.48 for v in w]), PURPLE_DK)
+    # leg: two separate violet elements over black, each tapering on its own
+    _wrap(c, D.SIDE_BACK_OUT, D.SIDE_BACK_IN, M)
+    _wrap(c, D.SIDE_FRONT_OUT, D.SIDE_FRONT_IN, M)
 
     bx = D.mx((198.0, 700.0), ax) if mirror else (198.0, 700.0)
     fill(c, SH.blade(bx[0], bx[1], -114 if mirror else -66, 72, 3.6, 0.30), PURPLE_DK)
@@ -163,7 +158,7 @@ def _side_body(c, mirror):
 
     for pts in (D.SIDE_TORSO_FRONT, D.SIDE_TORSO_BACK):
         stroke(c, D.smooth(M(pts)), WHITE, 1.9, cap=1, join=1)
-    for pts in (D.SIDE_LEG_FRONT, D.SIDE_LEG_BACK):
+    for pts in (D.SIDE_FRONT_OUT, D.SIDE_BACK_IN):
         stroke(c, D.smooth(M(pts[:3])), WHITE, 1.6, cap=1, join=1)
 
 

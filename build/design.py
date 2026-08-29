@@ -124,10 +124,14 @@ FRONT_EDGE_WL = [(492.0, 146.0), (480.0, 164.0), (470.0, 182.0), (463.0, 198.0),
 # Drawn with straight segments so the corner stays angular, not rounded.
 FRONT_LEGBAND_L = list(G.FRONT_CHEV_L)
 FRONT_LEGBAND_R = list(G.FRONT_CHEV_R)
+FRONT_LEGOUT_L = list(G.FRONT_CHEV_OUT_L)
+FRONT_LEGOUT_R = list(G.FRONT_CHEV_OUT_R)
 FRONT_LEGPIN_L = list(G.FRONT_CHEV_PIN_L)
 FRONT_LEGPIN_R = list(G.FRONT_CHEV_PIN_R)
 FRONT_LEGW_L = list(G.FRONT_CHEV_W_L)
 FRONT_LEGW_R = list(G.FRONT_CHEV_W_R)
+FRONT_LEGFULL_L = list(G.FRONT_LEGFULL_L)
+FRONT_LEGFULL_R = list(G.FRONT_LEGFULL_R)
 
 # ---- chest burst -----------------------------------------------------------
 CHEST_FIELD = FRONT_EDGE_WL[:7]          # the torn part of that boundary
@@ -193,25 +197,29 @@ def front_purple(c):
     fill(c, _band(FRONT_EDGE_WL, 640.0, 118.0, 356.0), PURPLE)
     # wearer's RIGHT: narrow band along the raglan seam / side seam
     fill(c, band_between(FRONT_OUTER_WR, FRONT_PIPE_WR), PURPLE)
-    # legs - straight segments keep the knee corner sharp
-    fill(c, _band_sharp(FRONT_LEGBAND_L, 250.0, 344.0, 764.0), PURPLE)
-    fill(c, _band_sharp(FRONT_LEGBAND_R, 640.0, 344.0, 764.0), PURPLE)
+    # Legs: an explicit closed band, so the element can pull away from the side
+    # seam below the knee instead of running to the contour.  Straight segments
+    # keep the knee corner sharp.
+    for inner, outer in ((FRONT_LEGBAND_L, FRONT_LEGOUT_L),
+                         (FRONT_LEGBAND_R, FRONT_LEGOUT_R)):
+        ring = list(inner) + list(reversed(outer))
+        fill(c, [[('M', *ring[0])] + [('L', *p) for p in ring[1:]] + [('Z',)]], PURPLE)
 
 
 def front_leg_chevron(c):
-    """Black pinstripe inside the violet band, following the same chevron.
+    """The BLACK GAP that splits the leg graphic into two separate elements.
 
-    Width is a fraction of the band, not a fixed weight: on DIMA.jpeg the line
-    measures about 7 % of the band, so it must thin out as the band does.
+    On DIMA.jpeg this gap measures 3-13 % of the leg width - it is a design
+    element, not a hairline, and without it the two angular shapes read as one
+    wide band.  Specified against the leg width, which is how it was measured.
     """
-    for pin, bw, side in ((FRONT_LEGPIN_L, FRONT_LEGW_L, -1),
-                          (FRONT_LEGPIN_R, FRONT_LEGW_R, 1)):
-        w = [max(0.45, min(1.5, 0.037 * v)) for v in bw]
+    for pin, legw in ((FRONT_LEGPIN_L, FRONT_LEGFULL_L),
+                      (FRONT_LEGPIN_R, FRONT_LEGFULL_R)):
+        n = len(pin)
+        # widest through the knee, where the reference gap opens to ~13 %
+        w = [max(0.8, 0.5 * lw * (0.045 + 0.045 * math.sin(math.pi * i / (n - 1)) ** 1.6))
+             for i, lw in enumerate(legw)]
         fill(c, SH.taper_band(pin, w, w), RICH_BLACK)
-        # a much fainter violet-shadow line just inside the band's inner edge
-        rib = [(x - side * max(2.0, 0.13 * v), y) for (x, y), v in zip(pin, bw)]
-        w2 = [max(0.3, v * 0.55) for v in w]
-        fill(c, SH.taper_band(rib, w2, w2), PURPLE_DK)
 
 
 def front_chest_graphic(c):
@@ -311,8 +319,8 @@ def back_piping(c):
 def back_leg_spike(c):
     for sgn, bx in ((1, 702.0), (-1, 2 * BCX - 702.0)):
         ang = -66.0 if sgn > 0 else -114.0
-        fill(c, SH.blade(bx, 704.0, ang, 58, 3.0, 0.30), PURPLE_DK)
-        fill(c, SH.blade(bx - 3 * sgn, 708.0, ang + 7 * sgn, 38, 1.6, 0.30), PURPLE)
+        fill(c, SH.blade(bx, 700.0, ang, 84, 3.4, 0.30), PURPLE)
+        fill(c, SH.blade(bx - 3 * sgn, 706.0, ang + 8 * sgn, 54, 1.8, 0.30), PURPLE_DK)
 
 
 # =============================================================== SLEEVES ===
@@ -369,5 +377,9 @@ SIDE_TORSO_BACK = list(G.SIDE_TORSO_BACK)
 SIDE_LEG_FRONT = list(G.SIDE_LEG_FRONT)
 SIDE_LEG_BACK = list(G.SIDE_LEG_BACK)
 SIDE_LEG_CHEV = list(G.SIDE_LEG_CHEV)
+SIDE_BACK_IN = list(G.SIDE_BACK_IN)
+SIDE_BACK_OUT = list(G.SIDE_BACK_OUT)
+SIDE_FRONT_IN = list(G.SIDE_FRONT_IN)
+SIDE_FRONT_OUT = list(G.SIDE_FRONT_OUT)
 SIDE_YOKE_L = [(224.0, 150.0), (208.0, 162.0), (192.0, 180.0), (180.0, 204.0),
                (173.0, 230.0), (170.0, 256.0), (169.0, 280.0)]

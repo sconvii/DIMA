@@ -150,7 +150,7 @@ SIDE_TORSO_YS = [176, 200, 230, 260, 290, 320, 348]
 SIDE_LEG_YS = [356, 400, 450, 500, 550, 600, 650, 700, 736]
 # Violet wraps the side seam: the middle ~44 % of the torso, ~50 % of the leg.
 SIDE_TORSO_IN, SIDE_TORSO_OUT = 0.30, 0.72
-SIDE_LEG_IN, SIDE_LEG_OUT = 0.24, 0.76
+SIDE_LEG_IN, SIDE_LEG_OUT = 0.30, 0.72
 
 
 def side_band(ys, f0, f1):
@@ -256,10 +256,13 @@ BACK_FIELD_EDGE = [(782.0, 130.0), (768.0, 156.0), (752.0, 180.0), (736.0, 206.0
 # knee, not running straight down.  Fractions of the leg width measured off the
 # reference by scanline; the apex node is kept as a hard corner (no smoothing),
 # because the reference corner is angular, not rounded.
-CHEV_YS = [352, 400, 450, 495, 528, 548, 578, 606, 640, 680, 715, 736]
-CHEV_FRAC = [0.285, 0.310, 0.350, 0.425, 0.475, 0.512,
-             0.320, 0.205, 0.115, 0.065, 0.040, 0.028]
-CHEV_APEX = 5                       # index of the sharp corner
+CHEV_YS = [352, 400, 449, 471, 494, 516, 538, 561, 583, 605, 628, 650, 690, 730]
+# Measured off DIMA.jpeg at 3x, as a fraction of the leg width from the side
+# seam.  The assembly is two nested angular elements, not one band - the black
+# gap between them is part of the design and is held wide enough to read.
+CHEV_FRAC = [0.285, 0.320, 0.375, 0.390, 0.450, 0.490, 0.525, 0.490,
+             0.500, 0.255, 0.058, 0.030, 0.018, 0.012]
+CHEV_APEX = 6                       # index of the sharp corner
 
 FRONT_CHEV_PROF_L = profile(80, [y for y in CHEV_YS if y >= 460], FCX, 'L')
 FRONT_CHEV_PROF_R = profile(80, [y for y in CHEV_YS if y >= 460], FCX, 'R')
@@ -288,6 +291,31 @@ def _chev_edge(side):
 FRONT_CHEV_L = _chev_edge('L')
 FRONT_CHEV_R = _chev_edge('R')
 
+# Below the knee the element pulls AWAY from the side seam, leaving black at the
+# outer edge - the gap the reference keeps between the front element and the
+# black side area.  Fraction of the leg width, in from the seam.
+# A black gap is kept at the side seam along the whole length, so the front
+# element never runs continuously round onto the side panel; it opens further
+# below the knee, where the element pulls away and tapers out.
+CHEV_OUT_FRAC = [0.045, 0.045, 0.042, 0.040, 0.038, 0.036, 0.034, 0.038,
+                 0.055, 0.100, 0.160, 0.220, 0.260, 0.290]
+
+
+def _chev_outer(side):
+    prof = _hip_prof(side) + (FRONT_CHEV_PROF_L if side == 'L' else FRONT_CHEV_PROF_R)
+    pts = []
+    for (y, xo, xi), f, fi in zip(prof, CHEV_OUT_FRAC, CHEV_FRAC):
+        # never cross the inner boundary: as the element collapses the inset has
+        # to collapse with it, otherwise the band inverts and runs to the ankle
+        f = min(f, 0.70 * fi)
+        w = abs(xi - xo)
+        pts.append((xo + f * w if side == 'L' else xo - f * w, y))
+    return pts
+
+
+FRONT_CHEV_OUT_L = _chev_outer('L')
+FRONT_CHEV_OUT_R = _chev_outer('R')
+
 
 def band_pinstripe(edge, prof, frac_out, side):
     """Line inside the band, `frac_out` of the band width out from its inner
@@ -301,10 +329,47 @@ def band_pinstripe(edge, prof, frac_out, side):
 
 _HIP_L = _hip_prof('L') + FRONT_CHEV_PROF_L
 _HIP_R = _hip_prof('R') + FRONT_CHEV_PROF_R
-FRONT_CHEV_PIN_L = band_pinstripe(FRONT_CHEV_L, _HIP_L, 0.40, 'L')
-FRONT_CHEV_PIN_R = band_pinstripe(FRONT_CHEV_R, _HIP_R, 0.40, 'R')
+# Gap centre sits at ~56 % of the band, measured on the reference.
+FRONT_CHEV_PIN_L = band_pinstripe(FRONT_CHEV_L, _HIP_L, 0.44, 'L')
+FRONT_CHEV_PIN_R = band_pinstripe(FRONT_CHEV_R, _HIP_R, 0.44, 'R')
 
 # Band width at each node, so the pinstripe can be kept to the ~7 % of the band
 # measured on the reference instead of a fixed weight.
 FRONT_CHEV_W_L = [abs(x - xo) for (x, y), (yy, xo, xi) in zip(FRONT_CHEV_L, _HIP_L)]
 FRONT_CHEV_W_R = [abs(x - xo) for (x, y), (yy, xo, xi) in zip(FRONT_CHEV_R, _HIP_R)]
+# Leg width at each node - the gap is specified against the LEG, not the band,
+# because that is how it was measured (3-13 % of the leg).
+FRONT_LEGFULL_L = [abs(xi - xo) for (yy, xo, xi) in _HIP_L]
+FRONT_LEGFULL_R = [abs(xi - xo) for (yy, xo, xi) in _HIP_R]
+
+
+# ------------------------------------------- side leg: two separate elements -
+# The reference side panels stay predominantly BLACK and carry two narrow
+# violet elements with a black gap between them.  Both taper downwards: the
+# front-side element runs out around the calf (as the front view does), while
+# the back-side one carries on to the ankle (as the back view does).
+# Fractions across the side view: 0 = back edge, 1 = front edge.
+SIDE_EL_YS = [356, 400, 450, 500, 550, 600, 650, 700, 736]
+SIDE_BACK_EL = [(0.300, 0.480), (0.305, 0.480), (0.312, 0.478), (0.318, 0.476),
+                (0.324, 0.472), (0.330, 0.470), (0.338, 0.474), (0.346, 0.482),
+                (0.352, 0.488)]
+SIDE_FRONT_EL = [(0.560, 0.720), (0.558, 0.714), (0.556, 0.706), (0.552, 0.692),
+                 (0.548, 0.674), (0.544, 0.640), (0.542, 0.578), (0.540, 0.548),
+                 (0.540, 0.542)]
+
+
+def side_element(pairs):
+    a, b = [], []
+    for y, (f0, f1) in zip(SIDE_EL_YS, pairs):
+        sp = _side_span(y)
+        if not sp:
+            continue
+        x0, x1 = sp
+        w = x1 - x0
+        a.append((x0 + f0 * w, y))
+        b.append((x0 + f1 * w, y))
+    return smooth_x(a, 3), smooth_x(b, 3)
+
+
+SIDE_BACK_IN, SIDE_BACK_OUT = side_element(SIDE_BACK_EL)
+SIDE_FRONT_IN, SIDE_FRONT_OUT = side_element(SIDE_FRONT_EL)
