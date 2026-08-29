@@ -1,0 +1,3 @@
+analysis/
+*.tmp
+__pycache__/
