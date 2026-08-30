@@ -1,3 +1,6 @@
 analysis/
 *.tmp
 __pycache__/
+build/v5_art.pdf
+build/v5_frames.pdf
+build/v5_master.pdf

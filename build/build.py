@@ -13,12 +13,13 @@ from reportlab.lib.colors import CMYKColor
 import suitsrc as S
 import shards as SH
 import design as D
+import art as A
 import textcurves as TC
 from render import (RICH_BLACK, PURPLE, PURPLE_DK, WHITE, SEAM, TECH, GREY_TXT, HATCH,
                     composite_grey, fill, fill_pts, stroke, add, Clip, text)
 
 MM = 72.0 / 25.4
-OUT = 'DIMA_Suit_Final_v3.pdf'
+OUT = 'DIMA_Suit_Final_v4.pdf'
 
 doc, page, DR, SRECT = S.load()
 PW, PH = SRECT.width, SRECT.height          # 1192.6 x 843.8 pt  (A3 landscape)
@@ -83,83 +84,67 @@ TECHLINE = {90, 94, 95, 96, 99, 105, 108, 118, 123, 124, 126, 127, 140, 150, 154
 
 
 
+
 # ================================================================= paints ===
+# Base colour, then TRACED artwork from art.py.  No graphic path is authored
+# here: the chest, back, sleeve, leg and side-panel paths all come from
+# tracing REFERENCE_MASTER_2D.
 def bigrect(c, x0, y0, x1, y1, col):
     fill(c, [[('M', x0, y0), ('L', x1, y0), ('L', x1, y1), ('L', x0, y1), ('Z',)]], col)
 
 
 def paint_front_body(c):
-    bigrect(c, 250, 80, 650, 790, RICH_BLACK)
-    D.front_purple(c)
-    D.front_leg_chevron(c)
-    D.front_chest_graphic(c)
-    D.front_piping(c)
+    bigrect(c, 250, 80, 650, 790, RICH_BLACK)          # BASE_BLACK
+    fill(c, A.front_torso_purple(), PURPLE, eo=True)   # CHEST_GRAPHICS
+    fill(c, A.front_legs_purple(), PURPLE, eo=True)    # FRONT_LEG_GRAPHICS
+    fill(c, A.front_torso_white(), WHITE, eo=True)     # WHITE_GRAPHICS
 
 
-def paint_front_sleeve_wl(c):                 # wearer's LEFT -> violet sleeve
-    bigrect(c, 490, 130, 610, 470, PURPLE)
-    D.cuff_slivers(c, 590, 336, flip=True, colour=PURPLE_DK)
+def paint_front_sleeve_wl(c):                          # wearer's LEFT -> violet
+    bigrect(c, 490, 130, 610, 470, PURPLE)             # BASE_PURPLE
+    fill(c, A.sleeve_marks('purple', 'front'), RICH_BLACK, eo=True)
+    # the shoulder yoke is torso artwork that crosses the armhole
+    fill(c, A.front_torso_purple(), PURPLE, eo=True)
+    fill(c, A.front_torso_white(), WHITE, eo=True)
 
 
-def paint_front_sleeve_wr(c):                 # wearer's RIGHT -> black sleeve
-    bigrect(c, 280, 130, 400, 470, RICH_BLACK)
-    D.cuff_burst(c, 298, 350, flip=False, colour=PURPLE)
+def paint_front_sleeve_wr(c):                          # wearer's RIGHT -> black
+    bigrect(c, 280, 130, 400, 470, RICH_BLACK)         # BASE_BLACK
+    fill(c, A.sleeve_marks('black', 'front'), PURPLE, eo=True)
+    fill(c, A.front_torso_purple(), PURPLE, eo=True)
+    fill(c, A.front_torso_white(), WHITE, eo=True)
 
 
 def paint_back_torso(c):
     bigrect(c, 580, 80, 960, 790, RICH_BLACK)
-    D.back_purple(c)
-    D.back_burst(c)
-    D.back_piping(c)
-    D.back_plate(c)
+    fill(c, A.back_torso_purple(), PURPLE, eo=True)    # BACK_GRAPHICS
+    fill(c, A.back_torso_white(), WHITE, eo=True)
 
 
 def paint_back_legs(c):
     bigrect(c, 580, 330, 960, 790, RICH_BLACK)
-    D.back_purple(c)
-    D.back_leg_spike(c)
-    D.back_piping(c)
+    fill(c, A.back_legs_purple(), PURPLE, eo=True)     # BACK_LEG_GRAPHICS
 
 
-def paint_back_sleeve_wl(c):                  # viewer-left on the back view
+def paint_back_sleeve_wl(c):                           # viewer-left on the back
     bigrect(c, 600, 130, 720, 470, PURPLE)
-    D.cuff_slivers(c, 630, 336, flip=False, colour=PURPLE_DK)
+    fill(c, A.sleeve_marks('purple', 'back'), RICH_BLACK, eo=True)
+    fill(c, A.back_torso_purple(), PURPLE, eo=True)
+    fill(c, A.back_torso_white(), WHITE, eo=True)
 
 
 def paint_back_sleeve_wr(c):
     bigrect(c, 820, 130, 950, 470, RICH_BLACK)
-    D.cuff_burst(c, 922, 350, flip=True, colour=PURPLE)
+    fill(c, A.sleeve_marks('black', 'back'), PURPLE, eo=True)
+    fill(c, A.back_torso_purple(), PURPLE, eo=True)
+    fill(c, A.back_torso_white(), WHITE, eo=True)
 
 
 # ---- side views -------------------------------------------------------------
-def _wrap(c, front, back, M):
-    f = D.smooth(M(front))[0]
-    for q in reversed(M(back)):
-        f.append(('L', *q))
-    f.append(('Z',))
-    fill(c, [f], PURPLE)
-
-
 def _side_body(c, mirror):
-    ax = D.MIRROR
-    M = (lambda pts: D.mirror_pts(pts, ax)) if mirror else (lambda pts: pts)
-    bigrect(c, *((955, 80, 1105, 790) if mirror else (118, 80, 268, 790)), RICH_BLACK)
-    _wrap(c, D.SIDE_TORSO_FRONT, D.SIDE_TORSO_BACK, M)
-    # leg: two separate violet elements over black, each tapering on its own
-    _wrap(c, D.SIDE_BACK_OUT, D.SIDE_BACK_IN, M)
-    _wrap(c, D.SIDE_FRONT_OUT, D.SIDE_FRONT_IN, M)
-
-    bx = D.mx((198.0, 700.0), ax) if mirror else (198.0, 700.0)
-    fill(c, SH.blade(bx[0], bx[1], -114 if mirror else -66, 72, 3.6, 0.30), PURPLE_DK)
-
-    # forearm streak band: in this view the visible forearm belongs to the body
-    # profile panel, so it is painted here rather than with the sleeve
-    D.side_forearm(c, mirror, PURPLE_DK if mirror else PURPLE)
-
-    for pts in (D.SIDE_TORSO_FRONT, D.SIDE_TORSO_BACK):
-        stroke(c, D.smooth(M(pts)), WHITE, 1.9, cap=1, join=1)
-    for pts in (D.SIDE_FRONT_OUT, D.SIDE_BACK_IN):
-        stroke(c, D.smooth(M(pts[:3])), WHITE, 1.6, cap=1, join=1)
+    box = (955, 80, 1105, 790) if mirror else (118, 80, 268, 790)
+    bigrect(c, *box, RICH_BLACK)                       # stays predominantly black
+    fill(c, A.side_purple('R' if mirror else 'L'), PURPLE, eo=True)
 
 
 def paint_side_wr(c):
@@ -171,15 +156,12 @@ def paint_side_wl(c):
 
 
 def paint_side_sleeve(c, wearer, mirror):
-    ax = D.MIRROR
     box = (955, 96, 1105, 470) if mirror else (118, 96, 268, 470)
-    # the upper arm is plain in the reference; the forearm band is painted with
-    # the body panel, where the forearm is actually visible in this view
     bigrect(c, *box, PURPLE if wearer == 'L' else RICH_BLACK)
 
 
 def paint_collar(c, i):
-    """Black stand with a violet band and a white cord along its top edge."""
+    """Black stand with the violet band and white cord from the sketch edge."""
     sb = subs(i)
     r = DR[i]['rect']
     bigrect(c, r.x0 - 8, r.y0 - 8, r.x1 + 8, r.y1 + 8, RICH_BLACK)

@@ -73,3 +73,77 @@ of each leg's own width from the side seam:
 
 Sleeve colours are anatomical, per the author's decision: black is the wearer's
 right arm, so it reads left on the front view and right on the back view.
+
+
+## v5 — REF.pdf as the graphic master
+
+`REF.pdf` supersedes every earlier graphic source. Inspecting it settled the
+approach: it is not a picture to trace but a **finished Illustrator vector
+master** — 472 painting operations, no raster, no font resource, and already
+DeviceCMYK with this project's exact palette (rich black C40 M40 Y40 K100,
+violet C72 M86 Y0 K16, violet shade C82 M95 Y5 K42, composite greys, no flat K).
+
+So v5 does not redraw anything. It copies REF.pdf's page content stream and
+changes one thing.
+
+```
+python3 build/v5.py         # -> DIMA_Suit_Final_v5.pdf          (9 pages)
+python3 build/v5preview.py  # -> DIMA_Suit_Final_v5_PREVIEW.pdf  (4 pages)
+python3 build/v5svg.py      # -> DIMA_Suit_Final_v5_SOURCE.svg
+python3 build/v5verify.py   # pre-flight + overlay/difference against REF.pdf
+```
+
+| module | role |
+| --- | --- |
+| `refstream.py` | parses the page content stream into painting ops, each carrying the byte span that produced it, plus its CTM, colour and active clip |
+| `v5master.py` | the one correction, and the art-only variant used by the detail pages |
+| `v5.py` | assembles the nine production sheets |
+| `v5verify.py` | colour space, fonts, rasters, trim, overlay/difference, leg symmetry, band width |
+| `v5preview.py` | the screen proof that documents the change |
+| `v5svg.py` | editable sRGB vector source |
+
+### Why the stream is edited as bytes
+
+An earlier attempt read REF.pdf with `get_drawings()` and re-emitted the paths
+through ReportLab. That silently drops the clipping: REF.pdf fills large
+rectangles *through* a `W n` clip path, so re-emitting the rectangle alone
+floods the sheet with black and violet. Copying the byte range instead keeps
+the clip, the even-odd flags, the z-order and the transparency group intact —
+the artwork cannot drift from the master because it is the same objects.
+
+### The one change
+
+The image-RIGHT front leg (the wearer's LEFT) carries an elongated tapering
+triangle: violet band `op146` with the black gap `op147` inside it, running to
+the ankle. The image-LEFT leg's band was cut off square at about 62 % of the
+leg. The brief requires the same element on both legs, mirrored rather than
+redrawn, so the left leg's short band (`ops 158-164`) is replaced by copies of
+`op146`+`op147` under a mirror matrix.
+
+The axis is the trousers panel's own axis of symmetry, solved from its clip
+path — 382 points, best fit **X = 444.927 pt**, mean residual 0.0005 pt.
+
+Verified:
+
+| check | result |
+| --- | --- |
+| page 1 against REF.pdf | 99.486 % identical pixel for pixel |
+| pixels changed outside the corrected leg | 0 |
+| left leg against the mirrored right leg | 93.6 % identical (the rest is pattern seams, asymmetric by construction) |
+| violet share of leg width | 41 % at the knee tapering to 7.5 % at the ankle — a band, not a lampas |
+| violet runs across the leg | 2 at every height — the black gap is intact |
+
+Back legs, side panels, chest, back, sleeves, logos and the legal block are
+byte-identical to REF.pdf: they were never touched, so the back legs are not
+mirrored from the front and the sleeves keep their different colours.
+
+### Sheets
+
+1 — master sheet: FRONT + BACK + LEFT SIDE + RIGHT SIDE at one scale
+(420,7 × 297,7 mm) · 2-3 — front and back, 600 × 800 mm · 4-5 — side views,
+300 × 800 mm · 6-7 — each sleeve as a separate part, front and back halves at
+one scale · 8-9 — front and back legs, 800 × 600 mm.
+
+Detail pages place page 1 as a Form XObject, so their artwork is the same
+object rather than a copy; the manufacturer's sheet furniture is suppressed on
+them so nothing bleeds into a crop.
