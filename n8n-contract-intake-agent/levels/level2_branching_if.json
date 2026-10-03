@@ -1,0 +1,272 @@
+{
+  "name": "Уровень 2 — + ветвление по условию",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0e4c4306-39b9-469f-a0b6-a89f9c3593ab",
+      "name": "Telegram Trigger",
+      "webhookId": "774eb541-76be-4b15-ae94-10cfcbebcee5",
+      "credentials": {
+        "telegramApi": {
+          "id": null,
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.4-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5.4-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "Ты извлекаешь из сообщения поля заявки на договор. Заполняй только то, что явно названо в сообщении; если значение не названо — null. Сумму приводи к числу (12 млн = 12000000), валюту — к коду RUB / USD / EUR."
+            },
+            {
+              "content": "={{ $json.message.text }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_schema",
+              "name": "contract_mini",
+              "schema": "{\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"required\": [\n    \"contract_type\",\n    \"counterparty_name\",\n    \"amount\",\n    \"currency\",\n    \"subject\"\n  ],\n  \"properties\": {\n    \"contract_type\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ],\n      \"description\": \"поставка / услуги / аренда / подряд / NDA\"\n    },\n    \"counterparty_name\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"amount\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ]\n    },\n    \"currency\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"subject\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    }\n  }\n}",
+              "strict": true
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        260,
+        0
+      ],
+      "id": "276dc596-9ed8-4962-abbe-051264c2a9c5",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d3f63a1a-1125-45d5-a0d0-39c9cefd0eb3",
+              "name": "contract_type",
+              "value": "={{ $json.output[0].content[0].text.contract_type }}",
+              "type": "string"
+            },
+            {
+              "id": "d782ebee-71fc-4b23-a686-05477e304af2",
+              "name": "counterparty_name",
+              "value": "={{ $json.output[0].content[0].text.counterparty_name }}",
+              "type": "string"
+            },
+            {
+              "id": "1262d58c-708f-49ea-a0e8-0fc740a360cf",
+              "name": "amount",
+              "value": "={{ $json.output[0].content[0].text.amount }}",
+              "type": "number"
+            },
+            {
+              "id": "dd086299-c027-4d85-a4a5-af4d4c7cfbaf",
+              "name": "currency",
+              "value": "={{ $json.output[0].content[0].text.currency }}",
+              "type": "string"
+            },
+            {
+              "id": "068e37ea-9a77-476b-ac6f-036fe9a77fbc",
+              "name": "subject",
+              "value": "={{ $json.output[0].content[0].text.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "eda3828e-937d-40a4-a436-b6e69f2cb0df",
+              "name": "ready",
+              "value": "={{ !!($json.output[0].content[0].text.contract_type && $json.output[0].content[0].text.counterparty_name && $json.output[0].content[0].text.amount) }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        520,
+        0
+      ],
+      "id": "5b832af7-9776-4411-a32a-825bf1dfc7a2",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d627443d-17f5-40fc-a3f7-496f2e6b6d0a",
+              "leftValue": "={{ $json.ready }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        780,
+        0
+      ],
+      "id": "75073a07-7cd0-4409-a5c3-529c71b1eb13",
+      "name": "Данных достаточно?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ '✅ Заявка принята: ' + $json.contract_type + ' · ' + $json.counterparty_name + ' · ' + $json.amount + ' ' + $json.currency }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1040,
+        -100
+      ],
+      "id": "5170ac8a-0790-45e3-a459-8121afb8d67e",
+      "name": "Заявка принята",
+      "credentials": {
+        "telegramApi": {
+          "id": null,
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Не хватает данных. Укажите тип договора, контрагента и сумму.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1040,
+        100
+      ],
+      "id": "2d0ab6b1-69b5-4d0f-a898-10cc8d3793c2",
+      "name": "Нужны уточнения",
+      "credentials": {
+        "telegramApi": {
+          "id": null,
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Данных достаточно?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Данных достаточно?": {
+      "main": [
+        [
+          {
+            "node": "Заявка принята",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Нужны уточнения",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}
